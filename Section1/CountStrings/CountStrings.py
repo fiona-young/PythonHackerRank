@@ -1,4 +1,6 @@
-from Section1.CountStrings.Operations import Operations, Type, RepeatBox, Repeat, Or, And, StringBox, ResultWrapper
+from Section1.CountStrings.Operations import Operations, Type, RepeatBox, Repeat, Or, And, StringBox
+from Section1.CountStrings.CountRemaining import ResultWrapper
+
 class CountStrings:
     def __init__(self, regex_string, string_length):
         self.regex_string = regex_string
@@ -122,12 +124,7 @@ class Matches:
         return matches
 
     def count_simple_repeat(self, str_len):
-        matches, remaining = self.result.result.count_matches(str_len)
-        count_matches = self.result.count_matches2(str_len)
-        if len(remaining) == 1 and remaining.pop() == 0:
-            return matches
-        else:
-            return 0
+        return self.result.count_remaining(str_len)
 
 
 def main():

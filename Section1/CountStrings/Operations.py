@@ -14,12 +14,10 @@ class Type(Enum):
     type_or = 4
     type_and = 5
 
-class ResultWrapper:
-    def __init__(self, result):
-        self.result = result
 
 class RepeatBox:
     type = Type.type_repeat_box
+
 
 class StrLen:
     def __init__(self, in_type, in_len, in_value):
@@ -28,7 +26,9 @@ class StrLen:
         self.value = in_value
 
     def __str__(self):
-        return "t:%s l:%s v:%s"%(self.type.value, self.len, self.value)
+        return "t:%s l:%s v:%s" % (self.type.value, self.len, self.value)
+
+
 class StringBox:
     def __init__(self, my_string):
         self.type = Type.type_string
@@ -38,8 +38,8 @@ class StringBox:
     def __str__(self):
         return self.my_string
 
-    def walk(self,content):
-        content[self.type]+=1
+    def walk(self, content):
+        content[self.type] += 1
 
     def collapse(self, string_box_2):
         return StringBox(self.my_string + string_box_2.my_string)
@@ -64,6 +64,9 @@ class StringBox:
     def __len__(self):
         return len(self.my_string)
 
+    def count_remaining(self):
+        return {len(self): self.my_string}
+
 
 class And:
     def __init__(self, r1, r2):
@@ -78,24 +81,27 @@ class And:
         count1, remaining1 = self.r1.count_matches(length)
         if len(remaining1) > 1:
             raise IndexError
-        count2, remaining2 = self.r2.count_matches(length-remaining1.pop())
+        count2, remaining2 = self.r2.count_matches(length - remaining1.pop())
         return count2, remaining2
 
     def count_matches2(self, length):
         count1, remaining1 = self.r1.count_matches(length)
         if len(remaining1) > 1:
             raise IndexError
-        count2, remaining2 = self.r2.count_matches(length-remaining1.pop())
+        count2, remaining2 = self.r2.count_matches(length - remaining1.pop())
         return count2, remaining2
 
-    def walk(self,content):
-        content[self.type]+=1
+    def walk(self, content):
+        content[self.type] += 1
         self.r1.walk(content)
         self.r2.walk(content)
 
     def traverse(self, traverse_list):
         self.r1.traverse(traverse_list)
         self.r2.traverse(traverse_list)
+
+    def count_remaining(self):
+        a = 1
 
 
 class Or:
@@ -118,21 +124,26 @@ class Or:
         count2, remaining2 = self.r2.count_matches(length)
         return count1 + count2, remaining1.union(remaining2)
 
-    def walk(self,content):
-        content[self.type]+=1
+    def walk(self, content):
+        content[self.type] += 1
         self.r1.walk(content)
         self.r2.walk(content)
 
     def traverse(self, traverse_list):
-        traverse_list.append([self.r1,self.r2])
+        traverse_list.append([self.r1, self.r2])
 
-class CountRemainingReturn:
-    def __init__(self,count, remaining):
-        my_dict={remaining:count}
+    def count_remaining(self):
 
-    def __or__(self, other):
-        a = 1
-
+        a1 = self.r1.count_remaining()
+        a2 = self.r2.count_remaining()
+        out = {}
+        for key in set(a1).union(a2):
+            out[key]=[]
+            if key in a1:
+                out[key].append(a1[key])
+            if key in a2:
+                out[key].append(a2[key])
+        return out
 
 class Repeat:
     def __init__(self, value):
@@ -151,7 +162,7 @@ class Repeat:
             raise IndexError
         match_remaining = remaining.pop()
         match_length = length - match_remaining
-        power = match_remaining//match_length + 1
+        power = match_remaining // match_length + 1
         return count ** power, {0}
 
     def count_matches2(self, length):
@@ -160,11 +171,11 @@ class Repeat:
             raise IndexError
         match_remaining = remaining.pop()
         match_length = length - match_remaining
-        power = match_remaining//match_length + 1
+        power = match_remaining // match_length + 1
         return count ** power, {0}
 
-    def walk(self,content):
-        content[self.type]+=1
+    def walk(self, content):
+        content[self.type] += 1
         self.value.walk(content)
 
     def traverse(self, traverse_list):
@@ -172,3 +183,6 @@ class Repeat:
 
     def __len__(self):
         return len(self.value)
+
+    def count_remaining(self):
+        return {'rep': self.value.count_remaining()}
