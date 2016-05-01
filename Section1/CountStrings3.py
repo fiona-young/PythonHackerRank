@@ -226,6 +226,7 @@ class RegexGraphDFA:
         self.head = head
         self.valid_ends = valid_ends
         self.edge_matrix = self.generate_edge_matrix_numpy()
+        self.edge_matrix2 = self.generate_edge_matrix()
         a = 1
 
     def generate_edge_matrix(self):
@@ -265,14 +266,16 @@ class RegexGraphDFA:
         modulo = 1000000007
         #valid_paths = self.find_paths(length)
         #edge_walk2 = self.edge_matrix ** length
-        length_chunk = 1000000
+        length_chunk = 10000
+        result = self.generate_mod_power()
         if length <= length_chunk:
             edge_walk = self.edge_matrix ** length
         else:
             full = length // length_chunk
             remaining = length % length_chunk
-            edge_walk = self.edge_matrix ** length_chunk % modulo
+            edge_walk = (self.edge_matrix ** length_chunk % modulo) %modulo
             for i in range(1,full):
+                edge_walk %= modulo
                 edge_walk *= self.edge_matrix ** length_chunk % modulo
             edge_walk *= self.edge_matrix ** remaining % modulo
         count = 0
@@ -280,6 +283,8 @@ class RegexGraphDFA:
             count += edge_walk[self.head,end_node]
             #a = 1
         return count
+
+    #def generate_mod_power(self):
 
     def find_paths(self, length):
         last_state = {self.head: 1}
@@ -301,6 +306,7 @@ def main():
         in_line = input().strip().split()
         my_class = CountStrings(in_line[0])
         print(my_class.calculate(int(in_line[1])))
+
 
 
 if __name__ == "__main__":
