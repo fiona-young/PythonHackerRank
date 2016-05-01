@@ -40,6 +40,7 @@ class CountStrings:
             index += 1
         return result_set.get_matches_object()
 
+
 class ResultSet:
     def __init__(self):
         self.r1 = None
@@ -83,6 +84,7 @@ def gen_string_box(my_string):
     else:
         return StringBox(my_string)
 
+
 class Matches:
     def __init__(self, result):
         self.result = result
@@ -91,11 +93,13 @@ class Matches:
         return "matches: " + str(self.result.result)
 
     def count_matches(self, str_len):
+        self.result.count(str_len)
         content = {Type.type_string:0, Type.type_or:0,Type.type_repeat:0,Type.type_and:0}
         self.result.result.walk(content)
         if content[Type.type_repeat]<2:
             return self.count_simple_repeat(str_len)
         else:
+            self.result.count_remaining(str_len)
             return self.count_complex_repeat(str_len)
 
 

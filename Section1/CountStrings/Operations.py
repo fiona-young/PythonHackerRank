@@ -101,7 +101,16 @@ class And:
         self.r2.traverse(traverse_list)
 
     def count_remaining(self):
-        a = 1
+        my_list = self.r1.count_remaining()
+        if not isinstance(my_list, list):
+            my_list = [my_list]
+        a2 = self.r2.count_remaining()
+        if not isinstance(a2, list):
+            my_list.append(a2)
+        else:
+            my_list.extend(a2)
+        return my_list
+
 
 
 class Or:
@@ -138,11 +147,11 @@ class Or:
         a2 = self.r2.count_remaining()
         out = {}
         for key in set(a1).union(a2):
-            out[key]=[]
+            out[key]=set()
             if key in a1:
-                out[key].append(a1[key])
+                out[key].add(a1[key])
             if key in a2:
-                out[key].append(a2[key])
+                out[key].add(a2[key])
         return out
 
 class Repeat:
