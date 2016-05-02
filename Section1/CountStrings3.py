@@ -21,7 +21,6 @@ class CountStrings:
         nfa_graph = self.translate_regex()
         translate_graph = TranslateGraph(nfa_graph)
         self.dfa_graph = translate_graph.translate()
-        # self.dfa_graph = nfa_graph.collapse()
 
     def calculate(self, string_length):
         return self.dfa_graph.count_paths(string_length)
@@ -197,13 +196,13 @@ class TranslateGraph:
         valid_ends = set()
         adjacency = {}
         for node, edges in self.table.items():
-            adjacency[node]= []
+            adjacency[node] = []
             if self.nfa_graph.tail in self.trans_to[node]:
                 valid_ends.add(node)
             for my_char, node_dest in edges.items():
                 if node_dest is not None:
                     adjacency[node].append(Edge(node_dest, my_char))
-        return RegexGraphDFA(head,valid_ends,adjacency)
+        return RegexGraphDFA(head, valid_ends, adjacency)
 
     def create_translate_table(self):
         nfa_ids = self.nfa_graph.get_dfa_zero_node_set({self.nfa_graph.head})
@@ -220,84 +219,100 @@ class TranslateGraph:
 
 
 class RegexGraphDFA:
-
-    def __init__(self,head, valid_ends, edges):
+    def __init__(self, head, valid_ends, edges):
         self.edges = edges
         self.head = head
         self.valid_ends = valid_ends
-        self.edge_matrix = self.generate_edge_matrix_numpy()
-        self.edge_matrix2 = self.generate_edge_matrix()
-        a = 1
-
-    def generate_edge_matrix(self):
-        edge_matrix = []
-        for i in range(len(self.edges)):
-            edge_matrix.append([])
-            for j in range(len(self.edges)):
-                edge_matrix[i].append(0)
-        for node, edge_list in self.edges.items():
-            for dest_node, my_char in self.edges[node]:
-                edge_matrix[node][ dest_node] += 1
-        return edge_matrix
-
-    def count_paths_old(self, length):
-        modulo = 1000000007
-
-       # edge_walk2 = self.edge_matrix ** length
-        #count = 0
-        #for end_node in self.valid_ends:
-        #   count += edge_walk[self.head,end_node]
-        valid_paths = self.find_paths(length)
-        count = 0
-        for node in self.valid_ends.intersection(valid_paths):
-            count += valid_paths[node] % 1000000007
-        #a = 1
-        return count
-
-    def generate_edge_matrix_numpy(self):
-        import numpy
-        edge_matrix = numpy.zeros((len(self.edges), len(self.edges)),dtype = numpy.uint64)
-        for node, edge_list in self.edges.items():
-            for dest_node, my_char in self.edges[node]:
-                edge_matrix[node, dest_node] += 1
-        return numpy.matrix(edge_matrix)
+        self.edge_matrix = Matrix.get_from_edges(len(self.edges), self.edges)
 
     def count_paths(self, length):
         modulo = 1000000007
-        #valid_paths = self.find_paths(length)
-        #edge_walk2 = self.edge_matrix ** length
-        length_chunk = 10000
-        result = self.generate_mod_power()
-        if length <= length_chunk:
-            edge_walk = self.edge_matrix ** length
-        else:
-            full = length // length_chunk
-            remaining = length % length_chunk
-            edge_walk = (self.edge_matrix ** length_chunk % modulo) %modulo
-            for i in range(1,full):
-                edge_walk %= modulo
-                edge_walk *= self.edge_matrix ** length_chunk % modulo
-            edge_walk *= self.edge_matrix ** remaining % modulo
+        edge_walk = self.edge_matrix.pow(length, modulo)
         count = 0
         for end_node in self.valid_ends:
-            count += edge_walk[self.head,end_node]
-            #a = 1
-        return count
+            count += edge_walk.matrix[self.head][end_node]
+        return count % modulo
 
-    #def generate_mod_power(self):
 
-    def find_paths(self, length):
-        last_state = {self.head: 1}
-        current_state_set = {}
-        dist = 0
-        while len(last_state) > 0 and dist < length:
-            current_state_set = {}
-            for node, count in last_state.items():
-                for edges in self.edges[node]:
-                    current_state_set[edges[0]] = current_state_set.get(edges[0], 0) + count
-            last_state = current_state_set
-            dist += 1
-        return current_state_set
+class Matrix:
+    @staticmethod
+    def get_from_edges(dimension, adj_list):
+        my_matrix = Matrix.get_zeros(dimension)
+        my_matrix.add_edges(adj_list)
+        return my_matrix
+
+    @staticmethod
+    def get_zeros(dimension):
+        my_matrix = Matrix(dimension)
+        my_matrix.pad_zeros()
+        return my_matrix
+
+    def copy(self):
+        my_matrix = Matrix(self.dimension)
+        my_matrix.matrix = []
+        for i in range(self.dimension):
+            my_matrix.matrix.append([])
+            for j in range(self.dimension):
+                my_matrix.matrix[i].append(self.matrix[i][j])
+        return my_matrix
+
+    def __init__(self, dimension):
+        self.matrix = None
+        self.dimension = dimension
+
+    def __str__(self):
+        my_str = ''
+        for row in self.matrix:
+            my_str += str(row) + "\n"
+        return my_str
+
+    def pad_zeros(self):
+        self.matrix = []
+        for i in range(self.dimension):
+            self.matrix.append([])
+            for j in range(self.dimension):
+                self.matrix[i].append(0)
+
+    def add_edges(self, adj_list):
+        if adj_list is not None:
+            for from_node, edge_list in adj_list.items():
+                for to_node, my_char in edge_list:
+                    self.matrix[from_node][to_node] = 1
+
+    def pow(self, pow_val, mod_val=None):
+        started = False
+        target = pow_val
+        current_pow = 1
+        current_val = 0
+        while pow_val > 0:
+            if current_pow == 1:
+                current_pow_matrix = self.copy()
+            else:
+                current_pow_matrix = current_pow_matrix.mat_square_mult(current_pow_matrix, mod_val)
+            if pow_val % (2 * current_pow):
+                current_val += current_pow
+                if started:
+                    result = result.mat_square_mult(current_pow_matrix, mod_val)
+                else:
+                    result = current_pow_matrix.copy()
+                    started = True
+                # print(current_pow, current_val, target)
+                pow_val -= current_pow
+            current_pow *= 2
+        return result
+
+    def mat_square_mult(self, other, mod_val=None):
+        result = Matrix.get_zeros(self.dimension)
+        for i in range(self.dimension):
+            for j in range(self.dimension):
+                val = 0
+                for k in range(self.dimension):
+                    val += self.matrix[i][k] * other.matrix[k][j]
+                if mod_val is not None:
+                    val %= mod_val
+                result.matrix[i][j] = val
+
+        return result
 
 
 def main():
@@ -306,7 +321,6 @@ def main():
         in_line = input().strip().split()
         my_class = CountStrings(in_line[0])
         print(my_class.calculate(int(in_line[1])))
-
 
 
 if __name__ == "__main__":
