@@ -3,7 +3,6 @@ from collections import namedtuple
 
 Edge = namedtuple('Edge', 'dest char')
 
-
 class Alphabet(Enum):
     a = 'a'
     b = 'b'
@@ -36,28 +35,34 @@ class CountStrings:
                 return result, index
             elif self.regex_string[index] == '|':
                 result_set.set_or()
+            elif self.regex_string[index] == '*':
+                result_set.set_repeat()
             else:
-                result_set.insert(self.regex_string[index])
+                result_set.insert(RegexGraphNFA(Alphabet[self.regex_string[index]]))
             index += 1
         return result_set.calculate_result()
 
 
 class ResultSet:
+    AND, OR, REPEAT = 1, 2, 3
+
     def __init__(self):
         self.r1 = None
         self.r2 = None
-        self.has_or = False
+        self.op = self.AND
 
     def set_or(self):
-        self.has_or = True
+        self.op = self.OR
+
+    def set_repeat(self):
+        self.op = self.REPEAT
 
     def calculate_result(self):
-        repeat = True if self.r2 == '*' else False
-        if self.r2 is None:
-            pass
-        elif repeat:
+        if self.op == self.REPEAT:
             self.calculate_repeat()
-        elif self.has_or:
+        elif self.r2 is None:
+            pass
+        elif self.op == self.OR:
             self.calculate_or()
         else:
             self.calculate_and()
@@ -73,8 +78,6 @@ class ResultSet:
         self.r1.graph_add(self.r2)
 
     def insert(self, value):
-        if value != '*' and isinstance(value, str):
-            value = RegexGraphNFA.get_char_graph(Alphabet[value])
         if self.r1 is None:
             self.r1 = value
         else:
@@ -84,16 +87,11 @@ class ResultSet:
 class RegexGraphNFA:
     node_count = 0
 
-    def __init__(self):
+    def __init__(self, in_char):
         self.edges = None
         self.head = None
         self.tail = None
-
-    @staticmethod
-    def get_char_graph(value):
-        my_graph = RegexGraphNFA()
-        my_graph.insert_char(value)
-        return my_graph
+        self.insert_char(in_char)
 
     @classmethod
     def get_next_node_id(cls):
@@ -227,6 +225,8 @@ class RegexGraphDFA:
 
     def count_paths(self, length):
         modulo = 1000000007
+        if length == 0:
+            return 0 if 0 not in self.valid_ends else 1
         edge_walk = self.edge_matrix.pow(length, modulo)
         count = 0
         for end_node in self.valid_ends:
