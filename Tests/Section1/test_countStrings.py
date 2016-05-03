@@ -278,6 +278,12 @@ class TestCountStrings(TestCase):
         my_class = CountStrings(input_str)
         self.assertEqual(63137616,my_class.calculate(368046388))
 
+    def test_case1_line6(self):
+        input_str= "((((ab)|a)*)|(((aa)|(bb))*))"
+        my_class = CountStrings(input_str)
+        self.assertEqual(198110437,my_class.calculate(368046388))
+
+
 
 
 
