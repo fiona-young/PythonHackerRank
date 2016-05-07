@@ -13,14 +13,11 @@ def get_binary_list(target_val):
         i = i*2
         row += 1
 
-#get_binary_list(502014773)
-#get_binary_list(15)
-
 class Matrix:
     @staticmethod
     def get_from_edges(dimension, adj_list):
         my_matrix = Matrix.get_zeros(dimension)
-        my_matrix.add_edges(adj_list)
+        my_matrix._add_edges(adj_list)
         return my_matrix
 
     @staticmethod
@@ -55,7 +52,7 @@ class Matrix:
             for j in range(self.dimension):
                 self.matrix[i].append(0)
 
-    def add_edges(self, adj_list):
+    def _add_edges(self, adj_list):
         if adj_list is not None:
             for from_node, edge_list in adj_list.items():
                 for to_node in edge_list:
@@ -78,7 +75,7 @@ class Matrix:
                 else:
                     result = current_pow_matrix.copy()
                     started = True
-                print(current_pow, current_val, target)
+                #print(current_pow, current_val, target)
                 pow_val -= current_pow
             current_pow *= 2
         return result
@@ -95,24 +92,3 @@ class Matrix:
                 result.matrix[i][j]=val
 
         return result
-
-
-
-
-
-
-
-
-
-a = Matrix(4)
-b = Matrix.get_from_edges(3, {0: [1,2], 1: [1,2], 2: [1,2]})
-c = b.copy()
-print(b.pow(1))
-print(b.pow(1000000,1000000))
-print(b.pow(100, 10000))
-print(b.pow(1000000, 10000))
-print(b.pow(5020147730000, 1000000007))
-e = b.mat_square_mult(b)
-b = 1
-
-
