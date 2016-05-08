@@ -2,7 +2,7 @@ from Section1.MinHeap import MinHeap
 from unittest import TestCase
 
 
-class TestMatrix(TestCase):
+class TestMinHeap(TestCase):
     def test_min_heap_query(self):
         test_subject = MinHeap()
         test_subject.add(5)
