@@ -46,4 +46,4 @@ class MinHeap:
         return self._get_left(index) + 1
 
     def _get_parent(self, index):
-        return index // 2
+        return (index-1) // 2
