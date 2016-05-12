@@ -9,7 +9,7 @@ def get_accurate_edges(nodes, clique_guess):
 
 def get_result(nodes, edges):
     k =1./(1.-((2.*edges)/(1.*nodes**2)))
-    clique_guess = max(min(nodes,ceil(k))-3,1)
+    clique_guess = int(k)
     while clique_guess <nodes and edges > get_accurate_edges(nodes,clique_guess):
         clique_guess+=1
     return int(clique_guess)
