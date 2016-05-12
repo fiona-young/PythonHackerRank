@@ -1,4 +1,4 @@
-from math import ceil
+from math import ceil, floor
 
 
 def get_accurate_edges(nodes, clique_guess):
@@ -9,8 +9,8 @@ def get_accurate_edges(nodes, clique_guess):
 
 def get_result(nodes, edges):
     k =1./(1.-((2.*edges)/(1.*nodes**2)))
-    clique_guess = min(nodes,ceil(k))
-    while clique_guess <nodes and get_accurate_edges(nodes,clique_guess+1) <= edges:
+    clique_guess = max(min(nodes,ceil(k))-3,1)
+    while clique_guess <nodes and edges > get_accurate_edges(nodes,clique_guess):
         clique_guess+=1
     return int(clique_guess)
 
@@ -20,10 +20,6 @@ def main():
         in_str = input()
         nodes, edges = [int(i) for i in in_str.strip().split()]
         print(get_result(nodes,edges))
-
-
-
-
 
 def get_int_list(in_str):
     return [int(i) for i in in_str.strip().split()]
