@@ -1,12 +1,41 @@
 from unittest import TestCase
 import sys
 import io
-from Section1.CrabGraph import main
+from Section1.CrabGraphBipartite import main
 
 
 class TestCrabGraph(TestCase):
     def test_initial_case(self):
         input_string = '''4
+8 2 7
+1 4
+2 4
+3 4
+5 4
+5 8
+5 7
+5 6
+6 3 8
+1 2
+2 3
+3 4
+4 5
+5 6
+6 1
+1 4
+2 5
+8 2 11
+1 4
+1 2
+3 4
+3 2
+2 5
+4 5
+2 6
+5 6
+6 7
+6 8
+7 8
 50 3 24
 32 46
 18 23
@@ -32,41 +61,12 @@ class TestCrabGraph(TestCase):
 2 36
 33 41
 19 45
-8 2 11
-1 4
-1 2
-3 4
-3 2
-2 5
-4 5
-2 6
-5 6
-6 7
-6 8
-7 8
-8 2 7
-1 4
-2 4
-3 4
-5 4
-5 8
-5 7
-5 6
-6 3 8
-1 2
-2 3
-3 4
-4 5
-5 6
-6 1
-1 4
-2 5
 '''
 
-        output_string = '''32
+        output_string = '''6
+6
 8
-6
-6
+32
 '''
         sys.stdin = io.StringIO(input_string)
         sys.stdout = io.StringIO()
