@@ -9,8 +9,7 @@ class MaxFlow:
         self.source = source
         self.sink = sink
         self.capacity = capacity
-        self.flow = [[0] * self.node_count for _ in range(self.node_count)]
-        self.flow2 = {keys:0 for keys in self.capacity.keys()}
+        self.flow = {keys:0 for keys in self.capacity.keys()}
 
     def calculate(self):
         while True:
@@ -19,25 +18,25 @@ class MaxFlow:
             if len(shortest_path) == 0:
                 break
             self.add_flow(shortest_path, flow)
-        return sum([flow for (n1, n2), flow in self.flow2.items() if n1 == self.source])
+        return sum([flow for (n1, n2), flow in self.flow.items() if n1 == self.source])
 
     def add_flow(self, shortest_path, flow):
         for i in range(len(shortest_path) - 1):
             from_node = shortest_path[i]
             to_node = shortest_path[i + 1]
-            if (from_node, to_node) in self.flow2:
-                self.flow2[from_node,to_node] += flow
+            if (from_node, to_node) in self.flow:
+                self.flow[from_node, to_node] += flow
             else:
-                self.flow2[to_node,from_node] -= flow
+                self.flow[to_node, from_node] -= flow
 
     def get_residual(self):
         residual = {i: [] for i in range(self.node_count)}
 
         for (n1, n2), capacity in self.capacity.items():
-            if (capacity - self.flow2[n1,n2]) > 0:
-                residual[n1].append(Edge(n2, capacity - self.flow2[n1,n2]))
-            if self.flow2[n1,n2] > 0:
-                residual[n2].append(Edge(n1, self.flow2[n1,n2]))
+            if (capacity - self.flow[n1, n2]) > 0:
+                residual[n1].append(Edge(n2, capacity - self.flow[n1, n2]))
+            if self.flow[n1, n2] > 0:
+                residual[n2].append(Edge(n1, self.flow[n1, n2]))
         return residual
 
     def breadth_first_search(self, graph: dict):
