@@ -24,7 +24,7 @@ class MaxFlow:
         for i in range(len(shortest_path) - 1):
             from_node = shortest_path[i]
             to_node = shortest_path[i + 1]
-            if (from_node, to_node) in self.flow:
+            if (from_node, to_node) in self.capacity:
                 self.flow[from_node, to_node] += flow
             else:
                 self.flow[to_node, from_node] -= flow
