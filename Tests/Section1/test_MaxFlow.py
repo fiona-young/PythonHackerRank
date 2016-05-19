@@ -13,3 +13,11 @@ class TestMaxFlow(TestCase):
         test_subject = MaxFlow(node_count, source, sink, adj_dict)
         self.assertEqual(5,test_subject.calculate())
 
+    def test_case1(self):
+        adj_dict = {(0, 1): 10, (0, 2): 5, (1, 2): 15, (1, 3): 5, (2, 3): 10}
+        node_count = 4
+        source = 0
+        sink = 3
+        test_subject = MaxFlow(node_count, source, sink, adj_dict)
+        self.assertEqual(15,test_subject.calculate())
+
