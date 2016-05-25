@@ -1,20 +1,42 @@
 from unittest import TestCase
 import sys
 import io
-from Section2.MinimumPenaltyPath3 import main
-#from Section2.MinimumPenaltyPathOther import main
+from Section2.SnakesAndLadders import main
 
 class TestMinimumPenaltyPath(TestCase):
     def test_initial_case(self):
-        input_string = '''3 4
-1 2 1
-1 2 1000
-2 3 3
-1 3 100
-1 3
+        input_string = '''2
+3
+32 62
+42 68
+12 98
+7
+95 13
+97 25
+93 37
+79 27
+75 19
+49 47
+67 17
+4
+8 52
+6 80
+26 42
+2 72
+9
+51 19
+39 11
+37 29
+81 3
+59 5
+79 23
+53 7
+43 33
+77 21
 '''
 
         result = '''3
+5
 '''
         sys.stdin = io.StringIO(input_string)
         sys.stdout = io.StringIO()
