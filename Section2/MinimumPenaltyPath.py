@@ -48,7 +48,12 @@ class Graph:
             my_node = Node(i)
             self.my_dict[i] = my_node
             self.min_heap.add(my_node)
+        edge_set = set()
         for edge in edge_list:
+            nodes = (edge[0],edge[1])
+            if nodes in edge_set:
+                a = 1
+            edge_set.add(nodes)
             node1 = self.my_dict[edge[0]]
             node2 = self.my_dict[edge[1]]
             node1.add_adj(Edge(node2, edge[2]))
@@ -108,7 +113,7 @@ class MinHeap:
         result = self.query()
         self.min_heap[0].update_heap(None)
         self.min_heap[0] = self.min_heap[len(self.min_heap) - 1]
-
+        self.min_heap[0].update_heap(0)
         del self.min_heap[len(self.min_heap) - 1]
         self._heapify(0)
         return result
@@ -145,30 +150,30 @@ class Dijkstra:
     def __init__(self, node_count, edge_list: list):
         self.graph = Graph(node_count, edge_list)
 
-    def calculate(self, origin):
+    def calculate(self, origin, destination):
         self.graph.set_origin(origin)
         while self.graph.should_continue():
             current_node = self.graph.get_min()
             for edge in current_node.adj_list:
                 if not edge.node.visited:
-                    self.graph.relax(edge.node, current_node.weight + edge.weight)
+                    self.graph.relax(edge.node, current_node.weight | edge.weight)
             current_node.visited = True
-        print(self.graph)
+            if current_node.id == destination:
+                return current_node.weight
+        return -1
 
 
 def main():
-    case_str = input().strip()
-    cases = int(case_str)
-    for i in range(cases):
-        in_str = input()
-        edge_list = []
-        nodes, edges = get_int_list(in_str)
-        for i in range(edges):
-            edge_str = input()
-            edge_list.append(get_int_list(edge_str))
-        origin = int(input().strip())
-        my_obj = Dijkstra(nodes, edge_list)
-        my_obj.calculate(origin)
+    in_str = input()
+    edge_list = []
+    nodes, edges = get_int_list(in_str)
+    for i in range(edges):
+        edge_str = input()
+        edge_list.append(get_int_list(edge_str))
+    edge_list.sort()
+    origin, destination = get_int_list(input())
+    my_obj = Dijkstra(nodes, edge_list)
+    print(my_obj.calculate(origin, destination))
 
 
 def get_int_list(in_str):

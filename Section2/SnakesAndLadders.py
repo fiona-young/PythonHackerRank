@@ -1,5 +1,4 @@
 import collections
-
 Edge = collections.namedtuple("Edge", "node weight")
 
 
@@ -40,19 +39,18 @@ class Node:
 
 
 class Graph:
-    def __init__(self, node_count, edge_list: list):
+    def __init__(self, node_dict):
         self.my_dict = {}
         self.min_heap = MinHeap()
         self.origin = None
-        for i in range(1, node_count + 1):
+        for i in node_dict:
             my_node = Node(i)
             self.my_dict[i] = my_node
             self.min_heap.add(my_node)
-        for edge in edge_list:
-            node1 = self.my_dict[edge[0]]
-            node2 = self.my_dict[edge[1]]
-            node1.add_adj(Edge(node2, edge[2]))
-            node2.add_adj(Edge(node1, edge[2]))
+        for from_node, edge_list in node_dict.items():
+            for to_node, weight in edge_list:
+                self.my_dict[from_node].add_adj(Edge(self.my_dict[to_node],weight))
+        a = 1
 
     def set_origin(self, origin):
         self.origin = origin
@@ -108,7 +106,7 @@ class MinHeap:
         result = self.query()
         self.min_heap[0].update_heap(None)
         self.min_heap[0] = self.min_heap[len(self.min_heap) - 1]
-
+        self.min_heap[0].update_heap(0)
         del self.min_heap[len(self.min_heap) - 1]
         self._heapify(0)
         return result
@@ -140,12 +138,24 @@ class MinHeap:
     def _get_parent(self, index):
         return (index-1) // 2
 
+class SnakesAndLadders:
+    MAX_THROW, MAX_SQUARES = 6, 100
+    def __init__(self):
+        self.node_dict={i:[] for i in range(SnakesAndLadders.MAX_SQUARES)}
+        snake_heads = self.read_file()
+        self.add_throws(snake_heads)
+        self.graph = Graph(self.node_dict)
 
-class Dijkstra:
-    def __init__(self, node_count, edge_list: list):
-        self.graph = Graph(node_count, edge_list)
+    def add_throws(self, snake_heads: set):
+        for node_from in range(SnakesAndLadders.MAX_SQUARES):
+            if node_from not in snake_heads:
+                for node_to in range(node_from+1,node_from+1+SnakesAndLadders.MAX_THROW):
+                    if node_to < SnakesAndLadders.MAX_SQUARES:
+                        self.node_dict[node_from].append((node_to,1))
 
-    def calculate(self, origin):
+    def calculate(self):
+        origin = 0
+        destination = SnakesAndLadders.MAX_SQUARES-1
         self.graph.set_origin(origin)
         while self.graph.should_continue():
             current_node = self.graph.get_min()
@@ -153,22 +163,32 @@ class Dijkstra:
                 if not edge.node.visited:
                     self.graph.relax(edge.node, current_node.weight + edge.weight)
             current_node.visited = True
-        print(self.graph)
+            if current_node.id == destination:
+                return current_node.weight
+        return -1
+
+
+
+    def read_file(self):
+        n_ladders = int(input())
+        for _ in range(n_ladders):
+            node1, node2 = [i-1 for i in get_int_list(input())]
+            self.node_dict[node1].append((node2,0))
+        n_snakes = int(input())
+        snake_heads = set()
+        for _ in range(n_snakes):
+            node1, node2 = [i-1 for i in get_int_list(input())]
+            self.node_dict[node1].append((node2,0))
+            snake_heads.add(node1)
+        return snake_heads
+
 
 
 def main():
-    case_str = input().strip()
-    cases = int(case_str)
-    for i in range(cases):
-        in_str = input()
-        edge_list = []
-        nodes, edges = get_int_list(in_str)
-        for i in range(edges):
-            edge_str = input()
-            edge_list.append(get_int_list(edge_str))
-        origin = int(input().strip())
-        my_obj = Dijkstra(nodes, edge_list)
-        my_obj.calculate(origin)
+    cases = int(input())
+    for _ in range(cases):
+        my_obj = SnakesAndLadders()
+        print(my_obj.calculate())
 
 
 def get_int_list(in_str):
