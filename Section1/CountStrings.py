@@ -1,305 +1,326 @@
 from enum import Enum
+from collections import namedtuple
+
+Edge = namedtuple('Edge', 'dest char')
+
+class Alphabet(Enum):
+    a = 'a'
+    b = 'b'
+    e = None
 
 
-class Operations(Enum):
-    op_add = 1
-    op_or = 2
-    op_repeat = 3
-
-
-class Type(Enum):
-    type_repeat_box = 1
-    type_repeat = 2
-    type_string = 3
-    type_or = 4
-    type_and = 5
+def empty_edge(dest):
+    return Edge(dest, Alphabet.e)
 
 
 class CountStrings:
-    def __init__(self, regex_string, string_length):
+    def __init__(self, regex_string):
+        RegexGraphNFA.node_count = 0
         self.regex_string = regex_string
-        self.string_length = string_length
-        print("%s %s" % (self.regex_string, self.string_length))
+        nfa_graph = self.translate_regex()
+        translate_graph = TranslateGraph(nfa_graph)
+        self.dfa_graph = translate_graph.translate()
 
-    def calculate(self):
-        matches = self.get_matches()
-        print(matches)
-        count_object = matches.count_matches(self.string_length)
-        return count_object
+    def calculate(self, string_length):
+        return self.dfa_graph.count_paths(string_length)
 
-    def get_count(self, matches):
-        count = 0
-        if isinstance(matches, str):
-            if len(matches) == self.string_length:
-                return 1
-            else:
-                return 0
-        else:
-            for single_match in matches:
-                count += self.get_count(single_match)
-        return count
-
-    def get_matches(self, index=0):
+    def translate_regex(self, index=0):
         result_set = ResultSet()
         while index < len(self.regex_string):
-            my_char = self.regex_string[index]
-            if my_char == '(':
-                out_list, index = self.get_matches(index + 1)
+            if self.regex_string[index] == '(':
+                out_list, index = self.translate_regex(index + 1)
                 result_set.insert(out_list)
-            elif my_char == ')':
+            elif self.regex_string[index] == ')':
                 result = result_set.calculate_result()
                 return result, index
-            elif my_char == '|':
+            elif self.regex_string[index] == '|':
                 result_set.set_or()
+            elif self.regex_string[index] == '*':
+                result_set.set_repeat()
             else:
-                result_set.insert(gen_string_box(my_char))
+                result_set.insert(RegexGraphNFA(Alphabet[self.regex_string[index]]))
             index += 1
-        return result_set.get_matches_object()
+        return result_set.calculate_result()
+
 
 class ResultSet:
+    AND, OR, REPEAT = 1, 2, 3
+
     def __init__(self):
         self.r1 = None
         self.r2 = None
-        self.op = Operations.op_add
-        self.has_or = False
-
-    def get_matches_object(self):
-        return Matches(self.r1)
+        self.op = self.AND
 
     def set_or(self):
-        self.op = Operations.op_or
-        self.has_or = True
+        self.op = self.OR
+
+    def set_repeat(self):
+        self.op = self.REPEAT
 
     def calculate_result(self):
-        if self.r2.type == Type.type_repeat_box:
-            return Repeat(self.r1)
-        elif self.has_or:
-            if self.r1 == self.r2:
-                return self.r1
-            else:
-                return Or(self.r1, self.r2)
-        elif self.r1.type == Type.type_string and self.r2.type == Type.type_string:
-            return self.r1.collapse(self.r2)
+        if self.op == self.REPEAT:
+            self.calculate_repeat()
+        elif self.r2 is None:
+            pass
+        elif self.op == self.OR:
+            self.calculate_or()
         else:
-            return And(self.r1, self.r2)
+            self.calculate_and()
+        return self.r1
+
+    def calculate_repeat(self):
+        self.r1.graph_repeat()
+
+    def calculate_or(self):
+        self.r1.graph_or(self.r2)
+
+    def calculate_and(self):
+        self.r1.graph_add(self.r2)
 
     def insert(self, value):
         if self.r1 is None:
             self.r1 = value
         else:
             self.r2 = value
-        return self.r1, self.r2
 
 
-# class Simple:
-#    def __init__(self):
-#        self.level = 0
+class RegexGraphNFA:
+    node_count = 0
 
-#    def get_count_single(self):
-#        return CountReturn(2,2)
-def gen_string_box(my_string):
-    if my_string == "*":
-        return RepeatBox()
-    else:
-        return StringBox(my_string)
-class Matches:
-    def __init__(self, result):
-        self.result = result
+    def __init__(self, in_char):
+        self.edges = None
+        self.head = None
+        self.tail = None
+        self.insert_char(in_char)
 
-    def __str__(self):
-        return "matches: " + str(self.result)
+    @classmethod
+    def get_next_node_id(cls):
+        node_id = cls.node_count
+        cls.node_count += 1
+        return node_id
 
-    def count_matches(self, str_len):
-        content = {Type.type_string:0, Type.type_or:0,Type.type_repeat:0,Type.type_and:0}
-        self.result.walk(content)
-        print(content)
-        if content[Type.type_repeat]<2:
-            return self.count_simple_repeat(str_len)
-        else:
-            return self.count_complex_repeat(str_len)
+    def insert_char(self, value):
+        self.head = self.get_next_node_id()
+        self.tail = self.get_next_node_id()
+        self.edges = {self.head: [Edge(self.tail, value)],
+                      self.tail: []}
 
+    def graph_add(self, other):
+        join_node = self.get_next_node_id()
+        self.join(other)
+        self.edges[self.tail].append(empty_edge(join_node))
+        self.edges[join_node] = [empty_edge(other.head)]
+        self.tail = other.tail
 
-    def count_complex_repeat(self, str_len):
-        traverse_list = []
-        self.result.traverse(traverse_list)
-        granularity = 0
-        matches = 0
-        str_remaining = str_len
-        repeat_matches = 0
-        for traverse in traverse_list:
-            current_matches, current_str_remaining = traverse.count_matches(str_remaining)
-            if traverse.type == Type.type_repeat:
-                granularity = max(granularity, len(traverse))
-                repeat_matches = max(current_matches, repeat_matches)
+    def graph_repeat(self):
+        new_head = self.get_next_node_id()
+        new_tail = self.get_next_node_id()
+        self.edges[self.tail].extend([empty_edge(self.head), empty_edge(new_tail)])
+        self.edges[new_head] = [empty_edge(self.head), empty_edge(new_tail)]
+        self.edges[new_tail] = []
+        self.head = new_head
+        self.tail = new_tail
+
+    def graph_or(self, other):
+        new_head = self.get_next_node_id()
+        new_tail = self.get_next_node_id()
+        self.join(other)
+        self.edges[new_head] = [empty_edge(self.head), empty_edge(other.head)]
+        self.edges[self.tail].append(empty_edge(new_tail))
+        self.edges[other.tail].append(empty_edge(new_tail))
+        self.edges[new_tail] = []
+        self.head = new_head
+        self.tail = new_tail
+
+    def join(self, other):
+        for node, edge in other.edges.items():
+            if node in self.edges:
+                self.edges[node].extend(edge)
             else:
-                current_matches, current_str_remaining = traverse.count_matches(str_remaining)
-                if len(current_str_remaining)>1:
-                    raise IndexError
-                str_remaining = current_str_remaining.pop()
-                matches += current_matches
-        if(str_remaining % granularity) == 0:
-            matches += str_remaining//granularity
-        else:
-            matches = 0
-        return matches
+                self.edges[node] = edge
 
-    def count_simple_repeat(self, str_len):
-        matches, remaining = self.result.count_matches(str_len)
-        if len(remaining) == 1 and remaining.pop() == 0:
-            return matches
-        else:
-            return 0
+    def get_dfa_char_node_set(self, origin, use_char):
+        node_set = set()
+        for my_node in origin:
+            for edges in self.edges[my_node]:
+                if edges.char == use_char:
+                    node_set.add(edges.dest)
 
-class RepeatBox:
-    type = Type.type_repeat_box
+        return self.get_dfa_zero_node_set(node_set)
 
-class StrLen:
-    def __init__(self, in_type, in_len, in_value):
-        self.type = in_type
-        self.len = in_len
-        self.value = in_value
-
-    def __str__(self):
-        return "t:%s l:%s v:%s"%(self.type.value, self.len, self.value)
-class StringBox:
-    def __init__(self, my_string):
-        self.type = Type.type_string
-        self.level = 0
-        self.my_string = my_string
-
-    def __str__(self):
-        return self.my_string
-
-    def walk(self,content):
-        content[self.type]+=1
-
-    def collapse(self, string_box_2):
-        return StringBox(self.my_string + string_box_2.my_string)
-
-    def traverse(self, traverse_list):
-        traverse_list.append(self)
-
-    def count_matches(self, length):
-        remaining = length - len(self.my_string)
-        if remaining >= 0:
-            return 1, {remaining}
-        else:
-            return 0, {remaining}
-
-    def count_not_repeating_matches(self, length):
-        return self.count_matches(length)
-
-    def __len__(self):
-        return len(self.my_string)
+    def get_dfa_zero_node_set(self, origin):
+        node_set = set(origin)
+        processed = set()
+        while len(node_set.difference(processed)) > 0:
+            my_node = node_set.difference(processed).pop()
+            for edges in self.edges[my_node]:
+                if edges.char == Alphabet.e:
+                    node_set.add(edges.dest)
+            processed.add(my_node)
+        return frozenset(node_set)
 
 
-class And:
-    def __init__(self, r1, r2):
-        self.type = Type.type_and
-        self.r1 = r1
-        self.r2 = r2
+class TranslateGraph:
+    language = (Alphabet.a, Alphabet.b)
 
-    def __str__(self):
-        return "(%s)(%s)" % (self.r1, self.r2)
+    def __init__(self, nfa_graph: RegexGraphNFA):
+        self.node_count = 0
+        self.nfa_graph = nfa_graph
+        self.trans_to = {}
+        self.trans_from = {}
+        self.table = {}
 
-    def count_matches(self, length):
-        count1, remaining1 = self.r1.count_matches(length)
-        if len(remaining1) > 1:
-            raise IndexError
-        count2, remaining2 = self.r2.count_matches(length-remaining1.pop())
-        return count2, remaining2
+    def get_next_node_id(self):
+        node_id = self.node_count
+        self.node_count += 1
+        return node_id
 
-    def count_not_repeating_matches(self, length):
-        count1, remaining1 = self.r1.count_not_repeating_matches(length)
-        if len(remaining1) > 1:
-            raise IndexError
-        count2, remaining2 = self.r2.count_not_repeating_matches(length-remaining1.pop())
-        return count2, remaining2
+    def add_translate(self, nfa_ids):
+        if len(nfa_ids) == 0:
+            return None
+        if nfa_ids not in self.trans_from:
+            dfa_id = self.get_next_node_id()
+            self.trans_to[dfa_id] = nfa_ids
+            self.trans_from[nfa_ids] = dfa_id
+            self.table[dfa_id] = dict(zip(self.language, [None] * len(self.language)))
+        return self.trans_from[nfa_ids]
 
-    def walk(self,content):
-        content[self.type]+=1
-        self.r1.walk(content)
-        self.r2.walk(content)
+    def translate(self):
+        self.create_translate_table()
+        return self.build_dfa()
 
-    def traverse(self, traverse_list):
-        self.r1.traverse(traverse_list)
-        self.r2.traverse(traverse_list)
+    def build_dfa(self):
+        head = 0
+        valid_ends = set()
+        adjacency = {}
+        for node, edges in self.table.items():
+            adjacency[node] = []
+            if self.nfa_graph.tail in self.trans_to[node]:
+                valid_ends.add(node)
+            for my_char, node_dest in edges.items():
+                if node_dest is not None:
+                    adjacency[node].append(Edge(node_dest, my_char))
+        return RegexGraphDFA(head, valid_ends, adjacency)
 
+    def create_translate_table(self):
+        nfa_ids = self.nfa_graph.get_dfa_zero_node_set({self.nfa_graph.head})
+        self.add_translate(nfa_ids)
+        processed = set()
 
-class Or:
-    def __init__(self, r1, r2):
-        self.type = Type.type_or
-        self.level = max(r1.level, r2.level) + 1
-        self.r1 = r1
-        self.r2 = r2
-
-    def __str__(self):
-        return "(%s)|(%s)" % (self.r1, self.r2)
-
-    def count_matches(self, length):
-        count1, remaining1 = self.r1.count_matches(length)
-        count2, remaining2 = self.r2.count_matches(length)
-        return count1 + count2, remaining1.union(remaining2)
-
-    def count_not_repeating_matches(self, length):
-        count1, remaining1 = self.r1.count_not_repeating_matches(length)
-        count2, remaining2 = self.r2.count_not_repeating_matches(length)
-        return count1 + count2, remaining1.union(remaining2)
-
-    def walk(self,content):
-        content[self.type]+=1
-        self.r1.walk(content)
-        self.r2.walk(content)
-
-    def traverse(self, traverse_list):
-        traverse_list.append([self.r1,self.r2])
+        while len(set(self.table).difference(processed)) > 0:
+            my_node = set(self.table).difference(processed).pop()
+            for char in self.language:
+                next_nodes = self.nfa_graph.get_dfa_char_node_set(self.trans_to[my_node], char)
+                dfa_id = self.add_translate(next_nodes)
+                self.table[my_node][char] = dfa_id
+            processed.add(my_node)
 
 
-class Repeat:
-    def __init__(self, value):
-        self.type = Type.type_repeat
-        self.value = value
+class RegexGraphDFA:
+    def __init__(self, head, valid_ends, edges):
+        self.edges = edges
+        self.head = head
+        self.valid_ends = valid_ends
+        self.edge_matrix = Matrix.get_from_edges(len(self.edges), self.edges)
 
-    def get_count(self, str_len):
-        return self
+    def count_paths(self, length):
+        modulo = 1000000007
+        if length == 0:
+            return 0 if 0 not in self.valid_ends else 1
+        edge_walk = self.edge_matrix.pow(length, modulo)
+        count = 0
+        for end_node in self.valid_ends:
+            count += edge_walk.matrix[self.head][end_node]
+        return count % modulo
+
+
+class Matrix:
+    @staticmethod
+    def get_from_edges(dimension, adj_list):
+        my_matrix = Matrix.get_zeros(dimension)
+        my_matrix.add_edges(adj_list)
+        return my_matrix
+
+    @staticmethod
+    def get_zeros(dimension):
+        my_matrix = Matrix(dimension)
+        my_matrix.pad_zeros()
+        return my_matrix
+
+    def copy(self):
+        my_matrix = Matrix(self.dimension)
+        my_matrix.matrix = []
+        for i in range(self.dimension):
+            my_matrix.matrix.append([])
+            for j in range(self.dimension):
+                my_matrix.matrix[i].append(self.matrix[i][j])
+        return my_matrix
+
+    def __init__(self, dimension):
+        self.matrix = None
+        self.dimension = dimension
 
     def __str__(self):
-        return "(%s)*" % self.value
+        my_str = ''
+        for row in self.matrix:
+            my_str += str(row) + "\n"
+        return my_str
 
-    def count_matches(self, length):
-        count, remaining = self.value.count_matches(length)
-        if len(remaining) > 1:
-            raise IndexError
-        match_remaining = remaining.pop()
-        match_length = length - match_remaining
-        power = match_remaining//match_length + 1
-        return count ** power, {0}
+    def pad_zeros(self):
+        self.matrix = []
+        for i in range(self.dimension):
+            self.matrix.append([])
+            for j in range(self.dimension):
+                self.matrix[i].append(0)
 
-    def count_not_repeating_matches(self, length):
-        return 0, {0}
+    def add_edges(self, adj_list):
+        if adj_list is not None:
+            for from_node, edge_list in adj_list.items():
+                for to_node, my_char in edge_list:
+                    self.matrix[from_node][to_node] = 1
 
-    def walk(self,content):
-        content[self.type]+=1
-        self.value.walk(content)
+    def pow(self, pow_val, mod_val=None):
+        started = False
+        target = pow_val
+        current_pow = 1
+        current_val = 0
+        while pow_val > 0:
+            if current_pow == 1:
+                current_pow_matrix = self.copy()
+            else:
+                current_pow_matrix = current_pow_matrix.mat_square_mult(current_pow_matrix, mod_val)
+            if pow_val % (2 * current_pow):
+                current_val += current_pow
+                if started:
+                    result = result.mat_square_mult(current_pow_matrix, mod_val)
+                else:
+                    result = current_pow_matrix.copy()
+                    started = True
+                # print(current_pow, current_val, target)
+                pow_val -= current_pow
+            current_pow *= 2
+        return result
 
-    def traverse(self, traverse_list):
-        traverse_list.append(self)
+    def mat_square_mult(self, other, mod_val=None):
+        result = Matrix.get_zeros(self.dimension)
+        for i in range(self.dimension):
+            for j in range(self.dimension):
+                val = 0
+                for k in range(self.dimension):
+                    val += self.matrix[i][k] * other.matrix[k][j]
+                if mod_val is not None:
+                    val %= mod_val
+                result.matrix[i][j] = val
 
-    def __len__(self):
-        return len(self.value)
-
-class CountReturn:
-    def __init__(self, results=None, uses=0):
-        self.result = results
-        self.uses = uses
+        return result
 
 
 def main():
     cases = int(input().strip())
     for i in range(cases):
         in_line = input().strip().split()
-        my_class = CountStrings(in_line[0], int(in_line[1]))
-        print(my_class.calculate())
+        my_class = CountStrings(in_line[0])
+        print(my_class.calculate(int(in_line[1])))
 
 
 if __name__ == "__main__":
