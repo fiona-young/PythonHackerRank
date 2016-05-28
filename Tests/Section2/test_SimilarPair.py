@@ -25,7 +25,7 @@ class TestSimilarPair(TestCase):
         sys.stdin = file_input
         sys.stdout = io.StringIO()
         main()
-        self.assertEqual("12113343", sys.stdout.getvalue().strip())
+        self.assertEqual("4991754395", sys.stdout.getvalue().strip())
 
     def test_case_file2(self):
         file_input = open('test_SimilarPair2.in')
