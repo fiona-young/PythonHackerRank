@@ -1,41 +1,20 @@
-import array
-
-class Fenwick:
-    def __init__(self, size):
-        self.size = size
-        self.array = array.array('l', [0] * (size+1))
-        self.bare_array = array.array('l', [0] * size)
-
-    def update(self, key, value):
-        last_value = self.bare_array[key]
-        difference = value - last_value
-        self.bare_array[key] = value
-        tree_key = key + 1
-        while tree_key < self.size+1:
-            self.array[tree_key] += difference
-            tree_key += tree_key & -tree_key
-
-    def query(self, key):
-        tree_key = min(key + 1,self.size)
-        sum = 0
-        while tree_key > 0:
-            sum += self.array[tree_key]
-            tree_key -= tree_key & -tree_key
-        return sum
-
 class RangeFinder:
-    def __init__(self, size):
-        self.fenwick = Fenwick(size)
+    def __init__(self):
+        self.range_set = set()
 
     def add(self, node_id):
-        self.fenwick.update( node_id, 1)
+        self.range_set.add(node_id)
 
     def remove(self, node_id):
-        self.fenwick.update( node_id, 0)
+        self.range_set.discard(node_id)
 
     def range_count(self, min_val, max_val):
-        count_fen = self.fenwick.query(max_val)-self.fenwick.query(min_val-1)
-        return count_fen
+        count = 0
+        for i in self.range_set:
+            if (i>= min_val) and (i<= max_val):
+                count += 1
+        return count
+
 
 def read_input():
     nodes, T = get_int_list(input())
@@ -65,7 +44,7 @@ class Tree:
     def dfs_for_silly_non_recursive_python(self):
         process_list = [self.root]
         visited_set = set()
-        range_finder = RangeFinder(100000)
+        range_finder = RangeFinder()
         pairs = 0
         while len(process_list)>0 :
             my_node = process_list[len(process_list)-1]
