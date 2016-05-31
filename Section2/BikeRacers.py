@@ -28,7 +28,7 @@ class BikeRacer:
     def calculate_distances(self):
         for i_rider, rider in enumerate(self.riders_list):
             dist = []
-            for i_bike, bike in enumerate(self.bike_list):
+            for i_bike, bike in enumerate(self.bike_list,len(self.riders_list)):
                 distance = math.sqrt((rider.x - bike.x) ** 2 + (rider.y - bike.y) ** 2)
                 dist.append(distance)
                 self.tuples_bike[i_bike].append((distance, i_rider))
