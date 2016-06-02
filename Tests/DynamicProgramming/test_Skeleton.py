@@ -1,7 +1,7 @@
-from unittest import TestCase
-import sys
 import io
-from GreedyChallenges.Skeleton import main
+import sys
+from unittest import TestCase
+from DynamicProgramming.Skeleton import main
 
 class TestSolution(TestCase):
     def test_initial_case(self):
