@@ -2,7 +2,7 @@ import random
 import collections
 
 SplitSet = collections.namedtuple('SplitSet', 'smaller larger')
-Query = collections.namedtuple('Query','l r')
+
 
 class Node:
     def __init__(self, value, priority):
@@ -248,53 +248,3 @@ class Treap:
         new_front = high_node.join(high_split_set.smaller, low_split_set.smaller)
         self.root = low_node.join(new_front, high_split_set.larger)
 
-
-def read_input():
-    n_boxes = int(input())
-    initial_position = get_int_list()
-    n_queries = int(input())
-    queries =[]
-    for i in range(n_queries):
-        queries.append(Query(*get_int_list()))
-    return n_boxes, initial_position, n_queries, queries
-
-class Shelf:
-    def __init__(self,min_val,max_val):
-        self.treap = Treap.build_from_range(min_val,max_val)
-
-
-    def move_to_front(self, query: Query):
-        self.treap.move_to_front(query.l,query.r)
-
-    def __str__(self):
-        return str(self.treap)
-
-    def print_result(self):
-        print(str(self))
-
-class Solution:
-    def __init__(self):
-        self.n_boxes, self.initial_position, self.n_queries, self.queries = read_input()
-        self.locations = dict(zip(range(1,self.n_boxes+1),self.initial_position))
-        self.start = 1
-        self.gaps = []
-        self.shelf = Shelf(1,self.n_boxes)
-
-    def calculate(self):
-        for query in self.queries:
-            self.shelf.move_to_front(query)
-        self.shelf.print_result()
-
-
-
-def main():
-    my_object = Solution()
-    my_object.calculate()
-
-
-def get_int_list():
-    return [int(i) for i in input().strip().split()]
-
-
-if __name__ == "__main__":
-    main()
