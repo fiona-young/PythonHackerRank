@@ -281,7 +281,6 @@ class Matrix:
 
     def pow(self, pow_val, mod_val=None):
         started = False
-        target = pow_val
         current_pow = 1
         current_val = 0
         while pow_val > 0:
@@ -296,7 +295,6 @@ class Matrix:
                 else:
                     result = current_pow_matrix.copy()
                     started = True
-                # print(current_pow, current_val, target)
                 pow_val -= current_pow
             current_pow *= 2
         return result
