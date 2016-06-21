@@ -19,7 +19,13 @@ class Node:
         return " ".join(str(a) for a in result)
 
     def __str__(self):
-        return self.get_tree_walk_str()
+        return 'id %s P %s L %s R %s'%(self.value,self.get_value(self.parent), self.get_value(self.left), self.get_value(self.right))
+
+    def get_value(self,node):
+        if node is None:
+            return None
+        else:
+            return node.value
 
     def split(self):
         my_node = self.parent
@@ -101,7 +107,7 @@ class Node:
                     break
                 else:
                     tree_node = tree_node.right
-        add_node.update()
+        return add_node.update()
 
     def set_left(self, add_node):
         if add_node is not None:
@@ -115,10 +121,13 @@ class Node:
 
     def update(self):
         my_node = self
-        while my_node is not None:
+        while True is not None:
             my_node = my_node.check_heap()
             my_node.tree_size = 1 + my_node.size_right + my_node.size_left
+            if my_node.parent is None:
+                break
             my_node = my_node.parent
+        return my_node
 
     def update_single(self):
         self.tree_size = 1 + self.size_right + self.size_left
@@ -191,6 +200,30 @@ class Node:
         u.update_single()
         w.update_single()
 
+    def extract_node(self):
+        if not self.is_leaf():
+            self.make_leaf()
+        if self.parent is None:
+            return None
+        parent = self.parent
+        if self.is_left_child:
+            parent.left = None
+        else:
+            parent.right = None
+        self.parent = None
+        self.update_single()
+        return parent.rebalance()
+
+    def make_leaf(self):
+        while not self.is_leaf():
+            if self.size_right != 0 and (self.size_left == 0 or self.right.value < self.left.value >= self.size_left):
+                self.rotate_left(self.right)
+            else:
+                self.rotate_right(self.left)
+
+    def is_leaf(self):
+        return self.size_right ==0 and self.size_left == 0
+
     @staticmethod
     def set_parent(child, parent):
         if child is not None:
@@ -231,11 +264,17 @@ class Treap:
         else:
             return self.root.get_node_at_position(position)
 
+    def extract_node(self, my_node):
+        if self.root is None:
+            return None
+        else:
+            self.root = my_node.extract_node()
+
     def add(self, my_node):
         if self.root is None:
             self.root = my_node
         else:
-            self.root.add(my_node)
+            self.root = self.root.add(my_node)
 
     def move_to_front(self, val_low, val_high):
         if val_low == 1:

@@ -2,7 +2,7 @@ import io
 import sys
 from unittest import TestCase
 
-from Solutions.BlackRock.TradeAnalysis import main
+from Solutions.BlackRock.Done.TradeAnalysis import main
 
 
 class TestSolution(TestCase):

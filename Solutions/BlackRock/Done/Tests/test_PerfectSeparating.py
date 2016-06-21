@@ -2,7 +2,7 @@ import io
 import sys
 from unittest import TestCase
 
-from Solutions.BlackRock.PerfectSeparating import main
+from Solutions.BlackRock.Done.PerfectSeparating import main
 
 
 class TestSolution(TestCase):
