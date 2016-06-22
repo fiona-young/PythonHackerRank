@@ -36,7 +36,7 @@ class TestSolution(TestCase):
         self.assertEqual(1,node_list[3].tree_size)
         node_list[3].value = 25
         test_subject.add(node_list[3])
-        self.assertEqual('1 2 3 5 6 7 8 9 25',str(test_subject))
+        self.assertEqual('1 2 3 5 6 7 8 9 10 25',str(test_subject))
         a = 1
 
 

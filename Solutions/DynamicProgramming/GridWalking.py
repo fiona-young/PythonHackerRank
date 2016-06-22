@@ -1,4 +1,7 @@
 import collections
+import math
+
+
 def read_input():
     dimension_count, steps = get_int_list(input())
     initial_position = get_int_list(input())
@@ -12,24 +15,17 @@ class Solution:
         self.initial_position = tuple(self.initial_position)
         self.grid_dimensions = grid_dimensions
         self.graph = self.create_graph()
-
-    def get_cells(self,current_dimension=0, origin_string='' ):
-        return_val = []
-        if current_dimension == self.dimension_count:
-            return [tuple(get_int_list(origin_string))]
-        else:
-            for i in range(1,self.grid_dimensions[current_dimension]+1):
-                return_val.extend(self.get_cells(current_dimension+1,'%s %s'%(origin_string,i)))
-        return return_val
+        self.mod_val = 1000000007
+        self.fact = {}
 
     def create_graph(self):
         graph = []
         for i in range(self.dimension_count):
             graph_dimens = {}
-            for grid in range(1, self.grid_dimensions[i]+1):
-                graph_dimens[grid]=[]
+            for grid in range(1, self.grid_dimensions[i] + 1):
+                graph_dimens[grid] = []
                 for b in [-1, 1]:
-                    new_pos = grid+b
+                    new_pos = grid + b
                     if 0 < new_pos <= self.grid_dimensions[i]:
                         graph_dimens[grid].append(new_pos)
             graph.append(graph_dimens)
@@ -39,42 +35,47 @@ class Solution:
         return self.grid_walk()
 
     def grid_walk(self):
-        mod_val = 1000000007
+        combined_positions = None
+        for i in range(self.dimension_count):
+            position = self.get_1d_paths_array(i)
+            position_array =[]
+            for j in range(self.steps+1):
+                position_array.append(sum(position[j].values()))
+            combined_positions = self.combine_positions(position_array, combined_positions)
+        return combined_positions[self.steps] % self.mod_val
+
+    def combine_positions(self, position, combined_positions):
+        if combined_positions is None:
+            combined_positions = position
+        else:
+            combined_positions_old = combined_positions
+            combined_positions = [None] * (self.steps+1)
+            combined_positions[0] = 1
+            for path_len in range(1, self.steps + 1):
+                sum = 0
+                for len1 in range(0, path_len + 1):
+                    sum += position[len1] * combined_positions_old[path_len - len1] * self.get_choose(path_len, len1)
+                combined_positions[path_len] = sum % self.mod_val
+        return combined_positions
+
+    def get_choose(self, n, k):
+
+        return self.get_factorial(n) // (self.get_factorial(k) * (self.get_factorial(n - k)))
+
+    def get_factorial(self,val):
+        if val not in self.fact:
+            self.fact[val]=math.factorial(val)
+        return self.fact[val]
+
+    def get_1d_paths_array(self, index):
         position = []
-        for i in range(self.dimension_count):
-            position.append({self.initial_position[i]:1})
-
+        position.append({self.initial_position[index]: 1})
         for step in range(self.steps):
-            last_position = position
-            position = []
-            for i in range(self.dimension_count):
-                position.append(collections.defaultdict(int))
-                for origin, value in last_position[i].items():
-                    if self.dimension_count > 1:
-                        position[i][origin]=last_position[i][origin]
-                    for destination in self.graph[i][origin]:
-                        position[i][destination]=(position[i][destination]+value)%mod_val
-        routes = 0
-        for per_dimension in position:
-            for value in per_dimension.values():
-                routes = (routes+ value)%mod_val
-        return routes
-
-    def lazy_load(self, origin):
-        self.graph[origin]=[]
-        for i in range(self.dimension_count):
-            for b in [-1, 1]:
-                new_pos = origin[i]+b
-                if 0 < new_pos <= self.grid_dimensions[i]:
-                    grid = list(origin)
-                    grid[i]=new_pos
-                    dest = tuple(grid)
-                    self.graph[origin].append(dest)
-
-    def get_adj_list(self, origin):
-        if origin not in self.graph:
-            self.lazy_load(origin)
-        return self.graph[origin]
+            position.append(collections.defaultdict(int))
+            for origin, value in position[step].items():
+                for destination in self.graph[index][origin]:
+                    position[step + 1][destination] = (position[step + 1][destination] + value) % self.mod_val
+        return position
 
 def main():
     cases = int(input())
@@ -88,16 +89,4 @@ def get_int_list(in_str):
 
 
 if __name__ == "__main__":
-   # main()
-    input_string = '''1
-10 7
-20 58 12 14 5 5 48 18 39 11
-22 86 55 63 42 53 63 100 55 16
-'''
-
-    import sys
-    import io
-    sys.stdin = io.StringIO(input_string)
-    import cProfile
-    cProfile.run("main()")
-   # main()
+    main()
