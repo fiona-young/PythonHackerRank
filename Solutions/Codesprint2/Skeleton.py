@@ -1,9 +1,10 @@
 
+
+
 class Solution:
     def __init__(self):
         self.size = int(input())
         self.array1 = get_int_list(input())
-        self.array2 = get_int_list(input())
 
     def calculate(self):
         return 3

@@ -2,7 +2,7 @@ import io
 import sys
 from unittest import TestCase
 
-from Solutions.Section1.Dijkstra import main
+from ExampleDataStructures.Dijkstra import main
 
 
 class TestDijkstra(TestCase):

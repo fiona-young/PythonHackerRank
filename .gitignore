@@ -63,3 +63,8 @@ target/
 
 #Ipython Notebook
 .ipynb_checkpoints
+Solutions/Misc/GugaTraveling.py
+Solutions/Misc/GugaTraveling1.py
+Solutions/Misc/Tests/gugaTraveling1.in
+Solutions/Misc/Tests/gugaTraveling2.in
+Solutions/Misc/Tests/test_GugaTraveling.py
